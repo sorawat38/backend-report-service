@@ -1,11 +1,12 @@
 package handler
 
 import (
+	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/handler/reporthdl"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
-func InitRoute(e *echo.Echo) {
+func InitRoute(e *echo.Echo, reportHandler reporthdl.HTTPHandler) {
 
 	e.Use(
 		middleware.Logger(),
@@ -17,6 +18,7 @@ func InitRoute(e *echo.Echo) {
 		}),
 	)
 
-	_ = e.Group("/report")
+	report := e.Group("/report")
+	report.POST("/generate", reportHandler.GenerateReport)
 
 }

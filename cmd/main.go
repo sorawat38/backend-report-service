@@ -5,6 +5,7 @@ import (
 
 	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/config"
 	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/handler"
+	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/handler/reporthdl"
 	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/helper/logger"
 	"github.com/labstack/echo/v4"
 )
@@ -20,10 +21,11 @@ func main() {
 	defer logger.CloseLogger()
 
 	// Init repository
+	reportHandler := reporthdl.NewHTTPHandler()
 
 	// Starting server
 	e := echo.New()
-	handler.InitRoute(e)
+	handler.InitRoute(e, reportHandler)
 
 	logger.Infof("Starting server on port %v...\n", cfg.App.Port)
 	if err := e.Start(":" + cfg.App.Port); err != http.ErrServerClosed {
