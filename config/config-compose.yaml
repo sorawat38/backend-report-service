@@ -1,0 +1,10 @@
+app:
+    port: "3102"
+log:
+    env: "dev"
+database:
+    username: user
+    password: password
+    host: db
+    port: 3306
+    dbname: product
