@@ -9,6 +9,7 @@ import (
 type PaymentService interface {
 	GetOrderByDateMonth(date time.Time) (models.GetOrderByDateMonthResponse, error)
 	GetCartById(cartId string) (models.GetCartByIdResponse, error)
+	GetDiscountByCode(code string) (models.GetDiscountByCodeResponse, error)
 }
 
 type MenuService interface {
