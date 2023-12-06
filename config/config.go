@@ -1,10 +1,14 @@
 package config
 
-import "github.com/spf13/viper"
+import (
+	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/adaptor/gateway/config"
+	"github.com/spf13/viper"
+)
 
 type Config struct {
-	App App
-	Log Log
+	App     App
+	Log     Log
+	Gateway Gateway
 }
 
 type App struct {
@@ -14,6 +18,10 @@ type App struct {
 
 type Log struct {
 	Env string
+}
+
+type Gateway struct {
+	PaymentService config.PaymentServiceCfg
 }
 
 func InitConfig() (Config, error) {
