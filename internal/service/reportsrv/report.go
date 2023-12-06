@@ -43,9 +43,6 @@ func (srv service) GenerateMontlyReport(date time.Time) error {
 	// Check lenght of response data
 	if len(ordersResp.Data) == 0 {
 		logger.Warnf("orders from getting by `%v` is empty", date.Format(time.DateOnly))
-		totalOrder = 0
-	} else {
-		totalOrder = len(ordersResp.Data)
 	}
 
 	mReport := make(map[string]int, 0)
@@ -67,7 +64,7 @@ func (srv service) GenerateMontlyReport(date time.Time) error {
 			logger.Error(newErr.Error())
 			return newErr
 		}
-
+		totalOrder += len(cartsResp.Data)
 		for _, eachCart := range cartsResp.Data {
 
 			// caching here
