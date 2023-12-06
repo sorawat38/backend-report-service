@@ -25,7 +25,7 @@ func (gw paymentGateway) GetOrderByDateMonth(date time.Time) (models.GetOrderByD
 
 	date_format_yyyymmdd := date.Format(time.DateOnly)
 
-	req, err := http.NewRequest(http.MethodGet, gw.cfg.HostURL+"/order/"+date_format_yyyymmdd, nil)
+	req, err := http.NewRequest(http.MethodGet, gw.cfg.HostURL+"/order/date/"+date_format_yyyymmdd, nil)
 	if err != nil {
 		logger.Error("client: could not create request", zap.String("date", date_format_yyyymmdd), zap.Error(err))
 		return models.GetOrderByDateMonthResponse{}, err
