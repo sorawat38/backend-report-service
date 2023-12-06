@@ -10,3 +10,7 @@ type PaymentService interface {
 	GetOrderByDateMonth(date time.Time) (models.GetOrderByDateMonthResponse, error)
 	GetCartById(cartId string) (models.GetCartByIdResponse, error)
 }
+
+type MenuService interface {
+	GetMenuById(id string) (models.MenuGetByIdResponse, error)
+}
