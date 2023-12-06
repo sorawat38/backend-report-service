@@ -19,6 +19,6 @@ func InitRoute(e *echo.Echo, reportHandler reporthdl.HTTPHandler) {
 	)
 
 	report := e.Group("/report")
-	report.POST("/generate", reportHandler.GenerateReport)
+	report.POST("/generate", reportHandler.GenerateMontlyReport)
 
 }
