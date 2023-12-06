@@ -24,13 +24,13 @@ func (gw menuGateway) GetMenuById(id string) (models.MenuGetByIdResponse, error)
 
 	req, err := http.NewRequest(http.MethodGet, gw.cfg.HostURL+"/menu/"+id, nil)
 	if err != nil {
-		logger.Error("client: could not create request of GetCartByDateMonth", zap.String("id", id), zap.Error(err))
+		logger.Error("client: could not create request of GetMenuById", zap.String("id", id), zap.Error(err))
 		return models.MenuGetByIdResponse{}, err
 	}
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		logger.Error("client: error making http request of GetCartByDateMonth", zap.String("id", id), zap.Error(err))
+		logger.Error("client: error making http request of GetMenuById", zap.String("id", id), zap.Error(err))
 		return models.MenuGetByIdResponse{}, err
 	}
 
@@ -43,7 +43,7 @@ func (gw menuGateway) GetMenuById(id string) (models.MenuGetByIdResponse, error)
 
 	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
-		logger.Error("client: could not read response body of GetCartByDateMonth", zap.String("id", id), zap.Error(err))
+		logger.Error("client: could not read response body of GetMenuById", zap.String("id", id), zap.Error(err))
 		return models.MenuGetByIdResponse{}, err
 	}
 
@@ -52,7 +52,7 @@ func (gw menuGateway) GetMenuById(id string) (models.MenuGetByIdResponse, error)
 	var response models.MenuGetByIdResponse
 	err = json.Unmarshal(resBody, &response)
 	if err != nil {
-		logger.Error("client: can't umarshal response body of GetCartByDateMonth", zap.String("id", id), zap.Error(err))
+		logger.Error("client: can't umarshal response body of GetMenuById", zap.String("id", id), zap.Error(err))
 		return models.MenuGetByIdResponse{}, err
 	}
 

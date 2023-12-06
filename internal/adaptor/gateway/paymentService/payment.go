@@ -66,13 +66,13 @@ func (gw paymentGateway) GetCartById(cartId string) (models.GetCartByIdResponse,
 
 	req, err := http.NewRequest(http.MethodGet, gw.cfg.HostURL+"/cart/"+cartId, nil)
 	if err != nil {
-		logger.Error("client: could not create request of GetCartByDateMonth", zap.String("cart_id", cartId), zap.Error(err))
+		logger.Error("client: could not create request of GetCartById", zap.String("cart_id", cartId), zap.Error(err))
 		return models.GetCartByIdResponse{}, err
 	}
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		logger.Error("client: error making http request of GetCartByDateMonth", zap.String("cart_id", cartId), zap.Error(err))
+		logger.Error("client: error making http request of GetCartById", zap.String("cart_id", cartId), zap.Error(err))
 		return models.GetCartByIdResponse{}, err
 	}
 
@@ -85,7 +85,7 @@ func (gw paymentGateway) GetCartById(cartId string) (models.GetCartByIdResponse,
 
 	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
-		logger.Error("client: could not read response body of GetCartByDateMonth", zap.String("cart_id", cartId), zap.Error(err))
+		logger.Error("client: could not read response body of GetCartById", zap.String("cart_id", cartId), zap.Error(err))
 		return models.GetCartByIdResponse{}, err
 	}
 
@@ -94,7 +94,7 @@ func (gw paymentGateway) GetCartById(cartId string) (models.GetCartByIdResponse,
 	var response models.GetCartByIdResponse
 	err = json.Unmarshal(resBody, &response)
 	if err != nil {
-		logger.Error("client: can't umarshal response body of GetCartByDateMonth", zap.String("cart_id", cartId), zap.Error(err))
+		logger.Error("client: can't umarshal response body of GetCartById", zap.String("cart_id", cartId), zap.Error(err))
 		return models.GetCartByIdResponse{}, err
 	}
 
