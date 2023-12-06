@@ -15,7 +15,7 @@ func NewHTTPHandler(reportSrv service.Report) HTTPHandler {
 	return HTTPHandler{reportSrv: reportSrv}
 }
 
-func (hdl *HTTPHandler) GenerateReport(c echo.Context) error {
+func (hdl *HTTPHandler) GenerateMontlyReport(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, nil)
 }
