@@ -100,3 +100,42 @@ func (gw paymentGateway) GetCartById(cartId string) (models.GetCartByIdResponse,
 
 	return response, nil
 }
+
+func (gw paymentGateway) GetDiscountByCode(code string) (models.GetDiscountByCodeResponse, error) {
+
+	req, err := http.NewRequest(http.MethodGet, gw.cfg.HostURL+"/discount/"+code, nil)
+	if err != nil {
+		logger.Error("client: could not create request of GetDiscountByCode", zap.String("code", code), zap.Error(err))
+		return models.GetDiscountByCodeResponse{}, err
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		logger.Error("client: error making http request of GetDiscountByCode", zap.String("code", code), zap.Error(err))
+		return models.GetDiscountByCodeResponse{}, err
+	}
+
+	// Check the status code
+	if res.StatusCode != http.StatusOK {
+		return models.GetDiscountByCodeResponse{}, err
+	}
+
+	logger.Info("client: got response!")
+
+	resBody, err := io.ReadAll(res.Body)
+	if err != nil {
+		logger.Error("client: could not read response body of GetDiscountByCode", zap.String("code", code), zap.Error(err))
+		return models.GetDiscountByCodeResponse{}, err
+	}
+
+	logger.Info("client: response body", zap.String("response_body", string(resBody)))
+
+	var response models.GetDiscountByCodeResponse
+	err = json.Unmarshal(resBody, &response)
+	if err != nil {
+		logger.Error("client: can't umarshal response body of GetDiscountByCode", zap.String("code", code), zap.Error(err))
+		return models.GetDiscountByCodeResponse{}, err
+	}
+
+	return response, nil
+}

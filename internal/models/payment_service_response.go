@@ -38,3 +38,13 @@ type GetCartByIdResponseBody struct {
 	Properties        string `json:"properties,omitempty"`
 	AdditionalRequest string `json:"additional_request,omitempty"`
 }
+
+type GetDiscountByCodeResponse struct {
+	CommonResponse
+	Data GetDiscountByCodeResponseBody `json:"data,omitempty"`
+}
+
+type GetDiscountByCodeResponseBody struct {
+	Type  string          `json:"type"`
+	Value decimal.Decimal `json:"value"`
+}
