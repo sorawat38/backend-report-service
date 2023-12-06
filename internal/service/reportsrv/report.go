@@ -101,9 +101,9 @@ func (srv service) GenerateMontlyReport(date time.Time) error {
 			}
 		}
 
-		subTotal = subTotal.Add(eachOrder.SubTotal)
-		total = total.Add(eachOrder.TotalAmount)
-		totalDiscount = subTotal.Sub(total)
+		subTotal = subTotal.Add(eachOrder.SubTotal).Round(2)
+		total = total.Add(eachOrder.TotalAmount).Round(2)
+		totalDiscount = subTotal.Sub(total).Round(2)
 	}
 
 	items := generateItemData(mReport, menuCache, discountCache)
@@ -113,7 +113,7 @@ func (srv service) GenerateMontlyReport(date time.Time) error {
 	menuCache = nil
 	discountCache = nil
 
-	if err := generatePDF(date, totalOrder, items, subTotal.String(), totalDiscount.String(), total.String()); err != nil {
+	if err := generatePDF(date, totalOrder, items, subTotal.StringFixed(2), totalDiscount.StringFixed(2), total.StringFixed(2)); err != nil {
 		return err
 	}
 
@@ -141,13 +141,13 @@ func generateItemData(mReport map[string]int, menuCache map[string]models.MenuGe
 		case 1: // no discount
 			val := menuCache[key]
 			lineTotal := decimal.NewFromFloat(val.Price * float64(qty))
-			result = append(result, []string{strconv.Itoa(qty), val.FNname, fmt.Sprintf("%.2f", val.Price), "0%", lineTotal.String()})
+			result = append(result, []string{strconv.Itoa(qty), val.FNname, fmt.Sprintf("%.2f", val.Price), "0%", lineTotal.Round(2).StringFixed(2)})
 		case 2: // with discount
 			val := menuCache[splitedKey[0]]
 			discount := discountCache[splitedKey[1]]
 			lineSubTotal := decimal.NewFromFloat(val.Price * float64(qty))
 			lineTotal := lineSubTotal.Sub(lineSubTotal.Mul(discount.Value.Div(decimal.NewFromFloat(100.00))))
-			result = append(result, []string{strconv.Itoa(qty), val.FNname, fmt.Sprintf("%.2f", val.Price), discount.Value.String() + "%", lineTotal.Round(2).String()})
+			result = append(result, []string{strconv.Itoa(qty), val.FNname, fmt.Sprintf("%.2f", val.Price), discount.Value.String() + "%", lineTotal.Round(2).StringFixed(2)})
 		}
 	}
 
