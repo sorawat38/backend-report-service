@@ -32,7 +32,7 @@ type GetCartByIdResponseBody struct {
 	No                int    `json:"no"`
 	CustomerId        string `json:"customer_id"`
 	Date              string `json:"date"`
-	MenuId            int    `json:"menu_id"`
+	MenuId            string `json:"menu_id"`
 	Quantity          int    `json:"quantity"`
 	Status            string `json:"status"`
 	Properties        string `json:"properties,omitempty"`
