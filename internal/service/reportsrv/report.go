@@ -14,10 +14,11 @@ import (
 
 type service struct {
 	paymentGw gateway.PaymentService
+	menuGw    gateway.MenuService
 }
 
-func New(paymentGw gateway.PaymentService) service {
-	return service{paymentGw: paymentGw}
+func New(paymentGw gateway.PaymentService, menuGw gateway.MenuService) service {
+	return service{paymentGw: paymentGw, menuGw: menuGw}
 }
 
 func (srv service) GenerateMontlyReport(date time.Time) error {
