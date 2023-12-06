@@ -25,7 +25,7 @@ func main() {
 
 	// Init gateway
 	paymentServiceGw := paymentservice.New(cfg.Gateway.PaymentService)
-	menuServeGw := menuservice.New(cfg.Gateway.MenuServce)
+	menuServeGw := menuservice.New(cfg.Gateway.MenuService)
 
 	reportSrv := reportsrv.New(paymentServiceGw, menuServeGw)
 	reportHandler := reporthdl.NewHTTPHandler(reportSrv)

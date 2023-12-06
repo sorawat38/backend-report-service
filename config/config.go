@@ -22,7 +22,7 @@ type Log struct {
 
 type Gateway struct {
 	PaymentService config.PaymentServiceCfg
-	MenuServce     config.MenuServiceCfg
+	MenuService    config.MenuServiceCfg
 }
 
 func InitConfig() (Config, error) {
