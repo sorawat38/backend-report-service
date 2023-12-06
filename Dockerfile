@@ -72,7 +72,7 @@ COPY --from=build /bin/server /bin/
 # USER appuser
 
 # Expose the port that the application listens on.
-EXPOSE 3102
+EXPOSE 3103
 
 # What the container should run when it is started.
 ENTRYPOINT [ "/bin/server" ]
