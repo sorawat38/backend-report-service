@@ -6,4 +6,4 @@ gateway:
     paymentservice:
         hosturl: "http://127.0.0.1:8080"
     menuservice:
-        hosturl: "http://127.0.0.1:8080"
+        hosturl: "http://127.0.0.1:8081"
