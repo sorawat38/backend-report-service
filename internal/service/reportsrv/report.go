@@ -2,13 +2,16 @@ package reportsrv
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/adaptor/gateway"
 	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/helper/logger"
 	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/models"
 	"github.com/jung-kurt/gofpdf"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -25,7 +28,6 @@ func (srv service) GenerateMontlyReport(date time.Time) error {
 
 	var (
 		totalOrder int
-		cartItems  [][]models.GetCartByIdResponseBody
 	)
 
 	// Get orders from payment service
@@ -43,12 +45,16 @@ func (srv service) GenerateMontlyReport(date time.Time) error {
 		totalOrder = len(ordersResp.Data)
 	}
 
+	mReport := make(map[string]int, 0)
+	menuCache := make(map[string]models.MenuGetByIdResponseBody, 0)
+	discountCache := make(map[string]models.GetDiscountByCodeResponseBody, 0)
+
 	// Get cart detail from `cart_id`
 	// WARNING: THE MEMMORY USAGE CONCERN HERE
-	for _, each := range ordersResp.Data {
-		cartsResp, err := srv.paymentGw.GetCartById(each.CartId)
+	for _, eachOrder := range ordersResp.Data {
+		cartsResp, err := srv.paymentGw.GetCartById(eachOrder.CartId)
 		if err != nil {
-			logger.Error("can't get carts by id", zap.String("cart_id", each.CartId), zap.Error(err))
+			logger.Error("can't get carts by id", zap.String("cart_id", eachOrder.CartId), zap.Error(err))
 			return err
 		}
 
@@ -59,21 +65,101 @@ func (srv service) GenerateMontlyReport(date time.Time) error {
 			return newErr
 		}
 
-		cartItems = append(cartItems, cartsResp.Data)
+		for _, eachCart := range cartsResp.Data {
+
+			// caching here
+			_, ok := menuCache[eachCart.MenuId]
+			if !ok {
+				menuResp, err := srv.menuGw.GetMenuById(eachCart.MenuId)
+				if err != nil {
+					logger.Error("can't get menu by id", zap.String("menu_id", eachCart.MenuId), zap.Error(err))
+					return err
+				}
+				menuCache[eachCart.MenuId] = menuResp.Data
+			}
+
+			var discountVal string
+			if eachOrder.DiscountCode != "" {
+				// caching here
+				discountRespBodyCache, ok := discountCache[eachOrder.DiscountCode]
+				if !ok {
+					discountResp, err := srv.paymentGw.GetDiscountByCode(eachOrder.DiscountCode)
+					if err != nil {
+						logger.Error("can't get discount by code", zap.String("code", eachOrder.DiscountCode), zap.Error(err))
+						return err
+					}
+					discountCache[eachOrder.DiscountCode] = discountResp.Data
+					discountVal = discountResp.Data.Value.String()
+				} else {
+					discountVal = discountRespBodyCache.Value.String()
+				}
+			}
+
+			mReportKey := generateMapReportKey(eachCart.MenuId, discountVal)
+			qty, ok := mReport[mReportKey]
+			if !ok {
+				mReport[mReportKey] = 0
+			} else {
+				mReport[mReportKey] = qty + 1
+			}
+		}
 	}
 
-	if err := generatePDF(date, totalOrder, cartItems); err != nil {
+	items := generateItemData(mReport, menuCache, discountCache)
+
+	// reset
+	mReport = nil
+	menuCache = nil
+	discountCache = nil
+
+	if err := generatePDF(date, totalOrder, items, "", "", "", ""); err != nil {
 		return err
 	}
 
 	return nil
 }
 
+func generateMapReportKey(menuName string, discountVal string) string {
+
+	if discountVal == "" {
+		return menuName
+	} else {
+		return menuName + "_" + discountVal
+	}
+}
+
+func generateItemData(mReport map[string]int, menuCache map[string]models.MenuGetByIdResponseBody, discountCache map[string]models.GetDiscountByCodeResponseBody) [][]string {
+
+	var result [][]string
+
+	const defaultTax = "5%"
+
+	for key, qty := range mReport {
+
+		splitedKey := strings.Split(key, "_")
+
+		switch len(splitedKey) {
+		case 1: // no discount
+			val := menuCache[key]
+			lineTotalBeforeTax := decimal.NewFromFloat(val.Price * float64(qty))
+			lineTotal := lineTotalBeforeTax.Add(lineTotalBeforeTax.Mul(decimal.NewFromFloat(0.05)))
+			result = append(result, []string{strconv.Itoa(qty), val.FNname, fmt.Sprintf("%.2f", val.Price), "0%", defaultTax, lineTotal.String()})
+		case 2: // with discount
+			val := menuCache[splitedKey[0]]
+			lineTotalBeforeTax := decimal.NewFromFloat(val.Price * float64(qty))
+			lineTotal := lineTotalBeforeTax.Add(lineTotalBeforeTax.Mul(decimal.NewFromFloat(0.05)))
+			result = append(result, []string{strconv.Itoa(qty), val.FNname, fmt.Sprintf("%.2f", val.Price), splitedKey[1], defaultTax, lineTotal.String()})
+		}
+	}
+
+	return result
+}
+
 const (
 	ReportName = "ICS_Monthly_Report"
 )
 
-func generatePDF(date time.Time, totalOrder int, cartItems [][]models.GetCartByIdResponseBody) error {
+func generatePDF(date time.Time, totalOrder int, cartItems [][]string, subTotal string, totalDiscount string, totalTax string, total string) error {
 
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
@@ -125,16 +211,16 @@ func generatePDF(date time.Time, totalOrder int, cartItems [][]models.GetCartByI
 	pdf.CellFormat(35, 10, "Line Total", "B", 1, "R", false, 0, "")
 
 	// Sample invoice items (loop through your actual invoice items here)
-	items := [][]string{
-		{"12", "Chocolate", "$10.00", "0%", "5%", "$184.40"},
-		{"20", "Vanilla", "$9.80", "0%", "5%", "$107.80"},
-		{"5", "Chai", "$8.59", "0%", "5%", "$191.40"},
-	}
+	// items := [][]string{
+	// 	{"12", "Chocolate", "$10.00", "0%", "5%", "$184.40"},
+	// 	{"20", "Vanilla", "$9.80", "0%", "5%", "$107.80"},
+	// 	{"5", "Chai", "$8.59", "0%", "5%", "$191.40"},
+	// }
 
 	// Table content
 	pdf.SetFont(font, "", 12)
 	pdf.SetDrawColor(236, 236, 236)
-	for _, item := range items {
+	for _, item := range cartItems {
 		for idx, col := range item {
 			switch idx {
 			case 0:
@@ -165,15 +251,15 @@ func generatePDF(date time.Time, totalOrder int, cartItems [][]models.GetCartByI
 	pdf.SetDrawColor(126, 126, 126)
 
 	pdf.CellFormat(20, 10, "Subtotal", "T", 0, "L", false, 0, "")
-	pdf.CellFormat(0, 10, "$484.00", "T", 1, "R", false, 0, "")
+	pdf.CellFormat(0, 10, subTotal, "T", 1, "R", false, 0, "")
 
 	pdf.SetDrawColor(236, 236, 236)
 
 	pdf.CellFormat(20, 10, "Discount", "T", 0, "L", false, 0, "")
-	pdf.CellFormat(0, 10, "$0.00", "T", 1, "R", false, 0, "")
+	pdf.CellFormat(0, 10, totalDiscount, "T", 1, "R", false, 0, "")
 
 	pdf.CellFormat(20, 10, "Tax", "T", 0, "L", false, 0, "")
-	pdf.CellFormat(0, 10, "$44.00", "T", 1, "R", false, 0, "")
+	pdf.CellFormat(0, 10, totalTax, "T", 1, "R", false, 0, "")
 
 	pdf.SetDrawColor(126, 126, 126)
 	pdf.CellFormat(0, 0, "", "B", 1, "R", false, 0, "")
@@ -181,7 +267,7 @@ func generatePDF(date time.Time, totalOrder int, cartItems [][]models.GetCartByI
 	pdf.Ln(5)
 	pdf.SetFont(font, "B", 16)
 	pdf.CellFormat(20, 10, "Total", "0", 0, "L", false, 0, "")
-	pdf.CellFormat(0, 10, "$484.00", "0", 1, "R", false, 0, "")
+	pdf.CellFormat(0, 10, total, "0", 1, "R", false, 0, "")
 
 	// Generate output file
 	err := pdf.OutputFileAndClose(generateReportName())
