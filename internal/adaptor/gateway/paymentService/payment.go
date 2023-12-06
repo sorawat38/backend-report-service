@@ -61,3 +61,44 @@ func (gw paymentGateway) GetOrderByDateMonth(date time.Time) (models.GetOrderByD
 
 	return response, nil
 }
+
+func (gw paymentGateway) GetCartByDateMonth(date time.Time) (models.GetCartByDateMonthResponse, error) {
+
+	date_format_yyyymmdd := date.Format(time.DateOnly)
+
+	req, err := http.NewRequest(http.MethodGet, gw.cfg.HostURL+"/cart/date/"+date_format_yyyymmdd, nil)
+	if err != nil {
+		logger.Error("client: could not create request of GetCartByDateMonth", zap.String("date", date_format_yyyymmdd), zap.Error(err))
+		return models.GetCartByDateMonthResponse{}, err
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		logger.Error("client: error making http request of GetCartByDateMonth", zap.String("date", date_format_yyyymmdd), zap.Error(err))
+		return models.GetCartByDateMonthResponse{}, err
+	}
+
+	// Check the status code
+	if res.StatusCode != http.StatusOK {
+		return models.GetCartByDateMonthResponse{}, err
+	}
+
+	logger.Info("client: got response!")
+
+	resBody, err := io.ReadAll(res.Body)
+	if err != nil {
+		logger.Error("client: could not read response body of GetCartByDateMonth", zap.String("date", date_format_yyyymmdd), zap.Error(err))
+		return models.GetCartByDateMonthResponse{}, err
+	}
+
+	logger.Info("client: response body", zap.String("response_body", string(resBody)))
+
+	var response models.GetCartByDateMonthResponse
+	err = json.Unmarshal(resBody, &response)
+	if err != nil {
+		logger.Error("client: can't umarshal response body of GetCartByDateMonth", zap.String("date", date_format_yyyymmdd), zap.Error(err))
+		return models.GetCartByDateMonthResponse{}, err
+	}
+
+	return response, nil
+}

@@ -8,4 +8,5 @@ import (
 
 type PaymentService interface {
 	GetOrderByDateMonth(date time.Time) (models.GetOrderByDateMonthResponse, error)
+	GetCartByDateMonth(date time.Time) (models.GetCartByDateMonthResponse, error)
 }
