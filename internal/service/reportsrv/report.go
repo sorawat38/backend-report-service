@@ -27,7 +27,10 @@ func New(paymentGw gateway.PaymentService, menuGw gateway.MenuService) service {
 func (srv service) GenerateMontlyReport(date time.Time) error {
 
 	var (
-		totalOrder int
+		totalOrder    int
+		subTotal      decimal.Decimal
+		totalDiscount decimal.Decimal
+		total         decimal.Decimal
 	)
 
 	// Get orders from payment service
@@ -103,6 +106,10 @@ func (srv service) GenerateMontlyReport(date time.Time) error {
 				mReport[mReportKey] = qty + 1
 			}
 		}
+
+		subTotal = subTotal.Add(eachOrder.SubTotal)
+		total = total.Add(eachOrder.TotalAmount)
+		totalDiscount = subTotal.Sub(total)
 	}
 
 	items := generateItemData(mReport, menuCache, discountCache)
@@ -112,7 +119,7 @@ func (srv service) GenerateMontlyReport(date time.Time) error {
 	menuCache = nil
 	discountCache = nil
 
-	if err := generatePDF(date, totalOrder, items, "", "", ""); err != nil {
+	if err := generatePDF(date, totalOrder, items, subTotal.String(), totalDiscount.String(), total.String()); err != nil {
 		return err
 	}
 
