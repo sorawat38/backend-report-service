@@ -20,11 +20,14 @@ func New(paymentGw gateway.PaymentService) service {
 func (srv service) GenerateMontlyReport(date time.Time) error {
 
 	// Get orders from payment service
-	// _, err := srv.paymentGw.GetOrderByDateMonth(date)
-	// if err != nil {
-	// 	logger.Error("can't get orders by date month", zap.Error(err))
-	// 	return err
-	// }
+	_, err := srv.paymentGw.GetOrderByDateMonth(date)
+	if err != nil {
+		logger.Error("can't get orders by date month", zap.Error(err))
+		return err
+	}
+
+	// Get cart detail from `cart_id`
+	// srv.paymentGw.GetCartById()
 
 	if err := generatePDF(); err != nil {
 		return err

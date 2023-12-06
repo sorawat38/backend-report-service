@@ -21,12 +21,12 @@ type GetOrderByDateMonthResponseBody struct {
 	Status       string          `json:"status"`
 }
 
-type GetCartByDateMonthResponse struct {
+type GetCartByIdResponse struct {
 	CommonResponse
-	Data []GetCartByDateMonthResponseBody `json:"data,omitempty"`
+	Data []GetCartByIdResponseBody `json:"data,omitempty"`
 }
 
-type GetCartByDateMonthResponseBody struct {
+type GetCartByIdResponseBody struct {
 	CartId            string `json:"cart_id"`
 	No                int    `json:"no"`
 	CustomerId        string `json:"customer_id"`
