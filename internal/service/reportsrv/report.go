@@ -1,10 +1,13 @@
 package reportsrv
 
 import (
+	"errors"
+	"strconv"
 	"time"
 
 	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/adaptor/gateway"
 	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/helper/logger"
+	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/models"
 	"github.com/jung-kurt/gofpdf"
 	"go.uber.org/zap"
 )
@@ -19,17 +22,46 @@ func New(paymentGw gateway.PaymentService) service {
 
 func (srv service) GenerateMontlyReport(date time.Time) error {
 
+	var (
+		totalOrder int
+		cartItems  [][]models.GetCartByIdResponseBody
+	)
+
 	// Get orders from payment service
-	_, err := srv.paymentGw.GetOrderByDateMonth(date)
+	ordersResp, err := srv.paymentGw.GetOrderByDateMonth(date)
 	if err != nil {
 		logger.Error("can't get orders by date month", zap.Error(err))
 		return err
 	}
 
-	// Get cart detail from `cart_id`
-	// srv.paymentGw.GetCartById()
+	// Check lenght of response data
+	if len(ordersResp.Data) == 0 {
+		logger.Warnf("orders from getting by `%v` is empty", date.Format(time.DateOnly))
+		totalOrder = 0
+	} else {
+		totalOrder = len(ordersResp.Data)
+	}
 
-	if err := generatePDF(); err != nil {
+	// Get cart detail from `cart_id`
+	// WARNING: THE MEMMORY USAGE CONCERN HERE
+	for _, each := range ordersResp.Data {
+		cartsResp, err := srv.paymentGw.GetCartById(each.CartId)
+		if err != nil {
+			logger.Error("can't get carts by id", zap.String("cart_id", each.CartId), zap.Error(err))
+			return err
+		}
+
+		// Check lenght of response data
+		if len(cartsResp.Data) == 0 {
+			newErr := errors.New("carts from getting by `id` is empty") // this must not empty
+			logger.Error(newErr.Error())
+			return newErr
+		}
+
+		cartItems = append(cartItems, cartsResp.Data)
+	}
+
+	if err := generatePDF(date, totalOrder, cartItems); err != nil {
 		return err
 	}
 
@@ -40,7 +72,7 @@ const (
 	ReportName = "ICS_Monthly_Report"
 )
 
-func generatePDF() error {
+func generatePDF(date time.Time, totalOrder int, cartItems [][]models.GetCartByIdResponseBody) error {
 
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
@@ -74,10 +106,10 @@ func generatePDF() error {
 	pdf.SetFont(font, "B", 12)
 	pdf.CellFormat(12, 5, "Date:", "0", 0, "L", false, 0, "")
 	pdf.SetFont(font, "", 12)
-	pdf.CellFormat(0, 5, "{REPLACE_DATE_HERE}", "0", 1, "L", false, 0, "")
+	pdf.CellFormat(0, 5, date.Format(time.DateOnly), "0", 1, "L", false, 0, "")
 	pdf.Ln(15)
 
-	pdf.CellFormat(25, 5, "Total order: {REPLACE_TOTAL_ORDER_HERE}", "0", 1, "L", false, 0, "")
+	pdf.CellFormat(25, 5, "Total order: "+strconv.Itoa(totalOrder), "0", 1, "L", false, 0, "")
 	pdf.Ln(10)
 
 	// Table header
