@@ -81,10 +81,10 @@ func (srv service) GenerateMontlyReport(date time.Time) error {
 				menuCache[eachCart.MenuId] = menuResp.Data
 			}
 
-			var discountVal string
+			// var discountCode string
 			if eachOrder.DiscountCode != "" {
 				// caching here
-				discountRespBodyCache, ok := discountCache[eachOrder.DiscountCode]
+				_, ok := discountCache[eachOrder.DiscountCode]
 				if !ok {
 					discountResp, err := srv.paymentGw.GetDiscountByCode(eachOrder.DiscountCode)
 					if err != nil {
@@ -92,16 +92,13 @@ func (srv service) GenerateMontlyReport(date time.Time) error {
 						return err
 					}
 					discountCache[eachOrder.DiscountCode] = discountResp.Data
-					discountVal = discountResp.Data.Value.String()
-				} else {
-					discountVal = discountRespBodyCache.Value.String()
 				}
 			}
 
-			mReportKey := generateMapReportKey(eachCart.MenuId, discountVal)
+			mReportKey := generateMapReportKey(eachCart.MenuId, eachOrder.DiscountCode)
 			qty, ok := mReport[mReportKey]
 			if !ok {
-				mReport[mReportKey] = 0
+				mReport[mReportKey] = 1
 			} else {
 				mReport[mReportKey] = qty + 1
 			}
@@ -126,20 +123,18 @@ func (srv service) GenerateMontlyReport(date time.Time) error {
 	return nil
 }
 
-func generateMapReportKey(menuName string, discountVal string) string {
+func generateMapReportKey(menuName string, discountCode string) string {
 
-	if discountVal == "" {
+	if discountCode == "" {
 		return menuName
 	} else {
-		return menuName + "_" + discountVal
+		return menuName + "_" + discountCode
 	}
 }
 
 func generateItemData(mReport map[string]int, menuCache map[string]models.MenuGetByIdResponseBody, discountCache map[string]models.GetDiscountByCodeResponseBody) [][]string {
 
 	var result [][]string
-
-	const defaultTax = "5%"
 
 	for key, qty := range mReport {
 
@@ -149,11 +144,13 @@ func generateItemData(mReport map[string]int, menuCache map[string]models.MenuGe
 		case 1: // no discount
 			val := menuCache[key]
 			lineTotal := decimal.NewFromFloat(val.Price * float64(qty))
-			result = append(result, []string{strconv.Itoa(qty), val.FNname, fmt.Sprintf("%.2f", val.Price), "0%", defaultTax, lineTotal.String()})
+			result = append(result, []string{strconv.Itoa(qty), val.FNname, fmt.Sprintf("%.2f", val.Price), "0%", lineTotal.String()})
 		case 2: // with discount
 			val := menuCache[splitedKey[0]]
-			lineTotal := decimal.NewFromFloat(val.Price * float64(qty))
-			result = append(result, []string{strconv.Itoa(qty), val.FNname, fmt.Sprintf("%.2f", val.Price), splitedKey[1], defaultTax, lineTotal.String()})
+			discount := discountCache[splitedKey[1]]
+			lineSubTotal := decimal.NewFromFloat(val.Price * float64(qty))
+			lineTotal := lineSubTotal.Sub(lineSubTotal.Mul(discount.Value.Div(decimal.NewFromFloat(100.00))))
+			result = append(result, []string{strconv.Itoa(qty), val.FNname, fmt.Sprintf("%.2f", val.Price), discount.Value.String() + "%", lineTotal.Round(2).String()})
 		}
 	}
 
@@ -205,14 +202,20 @@ func generatePDF(date time.Time, totalOrder int, cartItems [][]string, subTotal 
 	pdf.Ln(10)
 
 	// Table header
+	qtyWidth := 20.0
+	descpWidth := 60.0
+	priceWidth := 35.0
+	discountWidth := 35.0
+	lineTotalWidth := 40.0
+
 	pdf.SetFont(font, "B", 12)
 	pdf.SetLineWidth(0.5)
 	pdf.SetDrawColor(126, 126, 126)
-	pdf.CellFormat(13, 10, "Qty", "B", 0, "L", false, 0, "")
-	pdf.CellFormat(60, 10, "Description", "B", 0, "L", false, 0, "")
-	pdf.CellFormat(25, 10, "Price", "B", 0, "R", false, 0, "")
-	pdf.CellFormat(30, 10, "Discount", "B", 0, "R", false, 0, "")
-	pdf.CellFormat(35, 10, "Line Total", "B", 1, "R", false, 0, "")
+	pdf.CellFormat(qtyWidth, 10, "Qty", "B", 0, "L", false, 0, "")
+	pdf.CellFormat(descpWidth, 10, "Description", "B", 0, "L", false, 0, "")
+	pdf.CellFormat(priceWidth, 10, "Price", "B", 0, "R", false, 0, "")
+	pdf.CellFormat(discountWidth, 10, "Discount", "B", 0, "R", false, 0, "")
+	pdf.CellFormat(lineTotalWidth, 10, "Line Total", "B", 1, "R", false, 0, "")
 
 	// Sample invoice items (loop through your actual invoice items here)
 	// items := [][]string{
@@ -228,15 +231,15 @@ func generatePDF(date time.Time, totalOrder int, cartItems [][]string, subTotal 
 		for idx, col := range item {
 			switch idx {
 			case 0:
-				pdf.CellFormat(13, 10, col, "B", 0, "L", false, 0, "")
+				pdf.CellFormat(qtyWidth, 10, col, "B", 0, "L", false, 0, "")
 			case 1:
-				pdf.CellFormat(60, 10, col, "B", 0, "L", false, 0, "")
+				pdf.CellFormat(descpWidth, 10, col, "B", 0, "L", false, 0, "")
 			case 2:
-				pdf.CellFormat(25, 10, col, "B", 0, "R", false, 0, "")
+				pdf.CellFormat(priceWidth, 10, col, "B", 0, "R", false, 0, "")
 			case 3:
-				pdf.CellFormat(30, 10, col, "B", 0, "R", false, 0, "")
+				pdf.CellFormat(discountWidth, 10, col, "B", 0, "R", false, 0, "")
 			case 4:
-				pdf.CellFormat(35, 10, col, "B", 0, "R", false, 0, "")
+				pdf.CellFormat(lineTotalWidth, 10, col, "B", 0, "R", false, 0, "")
 			}
 		}
 		pdf.Ln(-1)
