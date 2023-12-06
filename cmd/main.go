@@ -8,6 +8,7 @@ import (
 	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/handler"
 	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/handler/reporthdl"
 	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/helper/logger"
+	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/service/reportsrv"
 	"github.com/labstack/echo/v4"
 )
 
@@ -25,7 +26,8 @@ func main() {
 	paymentServiceGw := paymentservice.New(cfg.Gateway.PaymentService)
 
 	// Init repository
-	reportHandler := reporthdl.NewHTTPHandler(paymentServiceGw)
+	reportSrv := reportsrv.New(paymentServiceGw)
+	reportHandler := reporthdl.NewHTTPHandler(reportSrv)
 
 	// Starting server
 	e := echo.New()
