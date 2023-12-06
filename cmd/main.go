@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/config"
+	paymentservice "github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/adaptor/gateway/paymentService"
 	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/handler"
 	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/handler/reporthdl"
 	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/helper/logger"
@@ -20,8 +21,11 @@ func main() {
 	logger.InitLog(cfg.Log)
 	defer logger.CloseLogger()
 
+	// Init gateway
+	paymentServiceGw := paymentservice.New(cfg.Gateway.PaymentService)
+
 	// Init repository
-	reportHandler := reporthdl.NewHTTPHandler()
+	reportHandler := reporthdl.NewHTTPHandler(paymentServiceGw)
 
 	// Starting server
 	e := echo.New()
