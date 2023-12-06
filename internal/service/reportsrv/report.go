@@ -112,7 +112,7 @@ func (srv service) GenerateMontlyReport(date time.Time) error {
 	menuCache = nil
 	discountCache = nil
 
-	if err := generatePDF(date, totalOrder, items, "", "", "", ""); err != nil {
+	if err := generatePDF(date, totalOrder, items, "", "", ""); err != nil {
 		return err
 	}
 
@@ -141,13 +141,11 @@ func generateItemData(mReport map[string]int, menuCache map[string]models.MenuGe
 		switch len(splitedKey) {
 		case 1: // no discount
 			val := menuCache[key]
-			lineTotalBeforeTax := decimal.NewFromFloat(val.Price * float64(qty))
-			lineTotal := lineTotalBeforeTax.Add(lineTotalBeforeTax.Mul(decimal.NewFromFloat(0.05)))
+			lineTotal := decimal.NewFromFloat(val.Price * float64(qty))
 			result = append(result, []string{strconv.Itoa(qty), val.FNname, fmt.Sprintf("%.2f", val.Price), "0%", defaultTax, lineTotal.String()})
 		case 2: // with discount
 			val := menuCache[splitedKey[0]]
-			lineTotalBeforeTax := decimal.NewFromFloat(val.Price * float64(qty))
-			lineTotal := lineTotalBeforeTax.Add(lineTotalBeforeTax.Mul(decimal.NewFromFloat(0.05)))
+			lineTotal := decimal.NewFromFloat(val.Price * float64(qty))
 			result = append(result, []string{strconv.Itoa(qty), val.FNname, fmt.Sprintf("%.2f", val.Price), splitedKey[1], defaultTax, lineTotal.String()})
 		}
 	}
@@ -159,7 +157,7 @@ const (
 	ReportName = "ICS_Monthly_Report"
 )
 
-func generatePDF(date time.Time, totalOrder int, cartItems [][]string, subTotal string, totalDiscount string, totalTax string, total string) error {
+func generatePDF(date time.Time, totalOrder int, cartItems [][]string, subTotal string, totalDiscount string, total string) error {
 
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
@@ -207,7 +205,6 @@ func generatePDF(date time.Time, totalOrder int, cartItems [][]string, subTotal 
 	pdf.CellFormat(60, 10, "Description", "B", 0, "L", false, 0, "")
 	pdf.CellFormat(25, 10, "Price", "B", 0, "R", false, 0, "")
 	pdf.CellFormat(30, 10, "Discount", "B", 0, "R", false, 0, "")
-	pdf.CellFormat(25, 10, "Tax", "B", 0, "R", false, 0, "")
 	pdf.CellFormat(35, 10, "Line Total", "B", 1, "R", false, 0, "")
 
 	// Sample invoice items (loop through your actual invoice items here)
@@ -232,8 +229,6 @@ func generatePDF(date time.Time, totalOrder int, cartItems [][]string, subTotal 
 			case 3:
 				pdf.CellFormat(30, 10, col, "B", 0, "R", false, 0, "")
 			case 4:
-				pdf.CellFormat(25, 10, col, "B", 0, "R", false, 0, "")
-			case 5:
 				pdf.CellFormat(35, 10, col, "B", 0, "R", false, 0, "")
 			}
 		}
@@ -257,9 +252,6 @@ func generatePDF(date time.Time, totalOrder int, cartItems [][]string, subTotal 
 
 	pdf.CellFormat(20, 10, "Discount", "T", 0, "L", false, 0, "")
 	pdf.CellFormat(0, 10, totalDiscount, "T", 1, "R", false, 0, "")
-
-	pdf.CellFormat(20, 10, "Tax", "T", 0, "L", false, 0, "")
-	pdf.CellFormat(0, 10, totalTax, "T", 1, "R", false, 0, "")
 
 	pdf.SetDrawColor(126, 126, 126)
 	pdf.CellFormat(0, 0, "", "B", 1, "R", false, 0, "")
