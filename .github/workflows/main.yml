@@ -6,44 +6,24 @@ on:
       - staging
 
 jobs:
-  replace-password:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Replace password in config
-        run: |
-          sed -i 's/DB_PASSWORD/${{ secrets.DB_PASSWORD }}/g' config/config.prod.yaml
-
-      - name: Archive updated config as an artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: updated-config
-          path: config/config.prod.yaml
-
   build_and_push_docker_image:
     runs-on: ubuntu-latest
     name: Build & Push Docker Image
-    needs: replace-password
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download updated config artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: updated-config
-          path: config
+      - name: Replace password in config
+        run: |
+          sed -i 's/DB_PASSWORD/${{ secrets.DB_PASSWORD }}/g' config/config.prod.yaml
+          mv config/config.prod.yaml config/config.yaml
 
       - name: Build the Docker image
         run: |
           docker build . \
             --file Dockerfile \
-            --tag stanthikun802/backend-report-service:latest \
-            --build-arg CONFIG_PATH=config/config.prod.yaml
+            --tag stanthikun802/backend-report-service:latest
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v1
