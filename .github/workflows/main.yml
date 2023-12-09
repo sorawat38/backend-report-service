@@ -56,6 +56,6 @@ jobs:
           script: |
             docker pull stanthikun802/backend-report-service:latest
             docker stop backend-report-service && docker rm backend-report-service
-            docker run -d -p 3103:8080 --name backend-report-service stanthikun802/backend-report-service:latest
+            docker run -d -p 3103:8082 --name backend-report-service stanthikun802/backend-report-service:latest
             docker image prune -f
 
