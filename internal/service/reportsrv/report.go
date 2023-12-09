@@ -52,6 +52,11 @@ func (srv service) GenerateMontlyReport(date time.Time) error {
 	// Get cart detail from `cart_id`
 	// WARNING: THE MEMMORY USAGE CONCERN HERE
 	for _, eachOrder := range ordersResp.Data {
+
+		if eachOrder.Status == "Cancel" {
+			continue
+		}
+
 		cartsResp, err := srv.paymentGw.GetCartById(eachOrder.CartId)
 		if err != nil {
 			logger.Error("can't get carts by id", zap.String("cart_id", eachOrder.CartId), zap.Error(err))
