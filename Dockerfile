@@ -63,7 +63,9 @@ RUN --mount=type=cache,target=/var/cache/apk \
 # USER appuser
 
 RUN mkdir -p /config
-COPY ./config /config
+
+ARG CONFIG_PATH
+COPY $CONFIG_PATH /config/config.yaml
 
 # Copy the executable from the "build" stage.
 COPY --from=build /bin/server /bin/

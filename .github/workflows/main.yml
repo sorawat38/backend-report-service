@@ -1,0 +1,86 @@
+name: Building Application
+
+on:
+  push:
+    branches:
+      - staging
+
+jobs:
+  replace-password:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Replace password in config
+        run: |
+          sed -i 's/DB_PASSWORD/${{ secrets.DB_PASSWORD }}/g' config/config.prod.yaml
+
+      - name: Archive updated config as an artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: updated-config
+          path: config/config.prod.yaml
+
+  build_and_push_docker_image:
+    runs-on: ubuntu-latest
+    name: Build & Push Docker Image
+    needs: replace-password
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download updated config artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: updated-config
+          path: config
+
+      - name: Build the Docker image
+        run: |
+          docker build . \
+            --file Dockerfile \
+            --tag stanthikun802/backend-report-service:latest \
+            --build-arg CONFIG_PATH=config/config.prod.yaml
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
+
+      - name: Push Docker image to Docker Hub
+        run: |
+          docker push stanthikun802/backend-report-service:latest
+
+  deploy:
+    name: Deploy to EC2 on master branch push
+    runs-on: ubuntu-latest
+    needs: build_and_push_docker_image
+
+    steps:
+      - name: Checkout the files
+        uses: actions/checkout@v2
+
+      - name: Deploy to Server 1
+        uses: easingthemes/ssh-deploy@main
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.HOST_DNS }}
+          REMOTE_USER: ${{ secrets.USERNAME }}
+          TARGET: ${{ secrets.TARGET_DIR }}
+
+      - name: Executing remote ssh commands using ssh key
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST_DNS }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            docker pull stanthikun802/backend-report-service:latest
+            docker stop backend-report-service && docker rm backend-report-service
+            docker run -d -p 3103:3103 --name backend-report-service stanthikun802/backend-report-service:latest
+            docker image prune -f
+
