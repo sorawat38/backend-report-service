@@ -1,0 +1,9 @@
+app:
+    port: "8082"
+log:
+    env: "dev"
+gateway:
+    paymentservice:
+        hosturl: "http://54.234.168.231:3101"
+    menuservice:
+        hosturl: "http://54.234.168.231:3102"
