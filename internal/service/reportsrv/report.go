@@ -214,13 +214,6 @@ func generatePDF(date time.Time, totalOrder int, cartItems [][]string, subTotal 
 	pdf.CellFormat(discountWidth, 10, "Discount", "B", 0, "R", false, 0, "")
 	pdf.CellFormat(lineTotalWidth, 10, "Line Total", "B", 1, "R", false, 0, "")
 
-	// Sample invoice items (loop through your actual invoice items here)
-	// items := [][]string{
-	// 	{"12", "Chocolate", "$10.00", "0%", "5%", "$184.40"},
-	// 	{"20", "Vanilla", "$9.80", "0%", "5%", "$107.80"},
-	// 	{"5", "Chai", "$8.59", "0%", "5%", "$191.40"},
-	// }
-
 	// Table content
 	pdf.SetFont(font, "", 12)
 	pdf.SetDrawColor(236, 236, 236)
