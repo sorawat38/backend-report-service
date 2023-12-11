@@ -10,7 +10,10 @@ import (
 	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/handler/reporthdl"
 	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/helper/logger"
 	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/service/reportsrv"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -23,11 +26,16 @@ func main() {
 	logger.InitLog(cfg.Log)
 	defer logger.CloseLogger()
 
+	sess, err := initAWSSession()
+	if err != nil {
+		panic(err)
+	}
+
 	// Init gateway
 	paymentServiceGw := paymentservice.New(cfg.Gateway.PaymentService)
 	menuServeGw := menuservice.New(cfg.Gateway.MenuService)
 
-	reportSrv := reportsrv.New(paymentServiceGw, menuServeGw)
+	reportSrv := reportsrv.New(paymentServiceGw, menuServeGw, sess)
 	reportHandler := reporthdl.NewHTTPHandler(reportSrv)
 
 	// Starting server
@@ -38,4 +46,18 @@ func main() {
 	if err := e.Start(":" + cfg.App.Port); err != http.ErrServerClosed {
 		logger.Fatal(err.Error())
 	}
+}
+
+func initAWSSession() (*session.Session, error) {
+
+	// Initialize AWS session using your credentials or IAM role.
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String("us-east-1"),
+	})
+	if err != nil {
+		logger.Error("Error creating AWS session", zap.Error(err))
+		return nil, err
+	}
+
+	return sess, nil
 }

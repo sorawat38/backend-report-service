@@ -1,8 +1,10 @@
 package reportsrv
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -10,18 +12,23 @@ import (
 	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/adaptor/gateway"
 	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/helper/logger"
 	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/models"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/jung-kurt/gofpdf"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
 type service struct {
-	paymentGw gateway.PaymentService
-	menuGw    gateway.MenuService
+	paymentGw  gateway.PaymentService
+	menuGw     gateway.MenuService
+	awsSession *session.Session
 }
 
-func New(paymentGw gateway.PaymentService, menuGw gateway.MenuService) service {
-	return service{paymentGw: paymentGw, menuGw: menuGw}
+func New(paymentGw gateway.PaymentService, menuGw gateway.MenuService, awsSession *session.Session) service {
+	return service{paymentGw: paymentGw, menuGw: menuGw, awsSession: awsSession}
 }
 
 func (srv service) GenerateMontlyReport(date time.Time) error {
@@ -52,6 +59,11 @@ func (srv service) GenerateMontlyReport(date time.Time) error {
 	// Get cart detail from `cart_id`
 	// WARNING: THE MEMMORY USAGE CONCERN HERE
 	for _, eachOrder := range ordersResp.Data {
+
+		if eachOrder.Status == "Cancel" {
+			continue
+		}
+
 		cartsResp, err := srv.paymentGw.GetCartById(eachOrder.CartId)
 		if err != nil {
 			logger.Error("can't get carts by id", zap.String("cart_id", eachOrder.CartId), zap.Error(err))
@@ -113,7 +125,14 @@ func (srv service) GenerateMontlyReport(date time.Time) error {
 	menuCache = nil
 	discountCache = nil
 
-	if err := generatePDF(date, totalOrder, items, subTotal.StringFixed(2), totalDiscount.StringFixed(2), total.StringFixed(2)); err != nil {
+	pdfBytes, err := generatePDF(date, totalOrder, items, subTotal.StringFixed(2), totalDiscount.StringFixed(2), total.StringFixed(2))
+	if err != nil {
+		return err
+	}
+
+	// Send to SNS to send email
+	err = srv.notifyEmail(pdfBytes)
+	if err != nil {
 		return err
 	}
 
@@ -158,7 +177,7 @@ const (
 	ReportName = "ICS_Monthly_Report"
 )
 
-func generatePDF(date time.Time, totalOrder int, cartItems [][]string, subTotal string, totalDiscount string, total string) error {
+func generatePDF(date time.Time, totalOrder int, cartItems [][]string, subTotal string, totalDiscount string, total string) ([]byte, error) {
 
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
@@ -214,13 +233,6 @@ func generatePDF(date time.Time, totalOrder int, cartItems [][]string, subTotal 
 	pdf.CellFormat(discountWidth, 10, "Discount", "B", 0, "R", false, 0, "")
 	pdf.CellFormat(lineTotalWidth, 10, "Line Total", "B", 1, "R", false, 0, "")
 
-	// Sample invoice items (loop through your actual invoice items here)
-	// items := [][]string{
-	// 	{"12", "Chocolate", "$10.00", "0%", "5%", "$184.40"},
-	// 	{"20", "Vanilla", "$9.80", "0%", "5%", "$107.80"},
-	// 	{"5", "Chai", "$8.59", "0%", "5%", "$191.40"},
-	// }
-
 	// Table content
 	pdf.SetFont(font, "", 12)
 	pdf.SetDrawColor(236, 236, 236)
@@ -268,18 +280,73 @@ func generatePDF(date time.Time, totalOrder int, cartItems [][]string, subTotal 
 	pdf.CellFormat(20, 10, "Total", "0", 0, "L", false, 0, "")
 	pdf.CellFormat(0, 10, total, "0", 1, "R", false, 0, "")
 
-	// Generate output file
-	err := pdf.OutputFileAndClose(generateReportName())
+	// Create a bytes.Buffer to hold the PDF content
+	var buf bytes.Buffer
+
+	// Output the PDF content to the buffer
+	if err := pdf.Output(&buf); err != nil {
+		logger.Error("Error generating PDF", zap.Error(err))
+		return nil, err
+	}
+
+	// Convert the buffer content to a byte slice
+	pdfBytes := buf.Bytes()
+
+	err := os.WriteFile(generateReportName(), pdfBytes, 0644)
 	if err != nil {
-		logger.Error("can't create output PDF file", zap.Error(err))
-		return err
+		logger.Error("Error writing PDF to file", zap.Error(err))
+		return nil, err
 	}
 
 	logger.Info("Monthly report generated successfully.")
 
-	return nil
+	return pdfBytes, nil
 }
 
 func generateReportName() string {
 	return ReportName + "_" + time.Now().Format("20060102") + ".pdf"
+}
+
+func (srv service) notifyEmail(fileContent []byte) error {
+
+	// Create new seession for S3
+	s3Svc := s3.New(srv.awsSession)
+
+	bucketName := "clcm3102-group-4-project"
+	objectKey := generateReportName()
+
+	// Upload the file to S3.
+	_, err := s3Svc.PutObject(&s3.PutObjectInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(objectKey),
+		Body:   bytes.NewReader(fileContent),
+		ACL:    aws.String("public-read"),
+	})
+	if err != nil {
+		logger.Error("Error uploading file to S3", zap.Error(err))
+		return err
+	}
+
+	// Create new session for sns
+	svc := sns.New(srv.awsSession)
+	topicArn := "arn:aws:sns:us-east-1:698668199773:clcm3102-group-4-project"
+
+	fileURL := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", bucketName, objectKey)
+	message := fmt.Sprintf("Message with attachment. File URL: %s", fileURL)
+
+	params := &sns.PublishInput{
+		TopicArn: aws.String(topicArn),
+		Message:  aws.String(message),
+	}
+
+	// Publish the message.
+	result, err := svc.Publish(params)
+	if err != nil {
+		logger.Error("Error publishing message", zap.Error(err))
+		return err
+	}
+
+	logger.Infof("Messsage published with message ID: %s", *result.MessageId)
+
+	return nil
 }

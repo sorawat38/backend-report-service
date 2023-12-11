@@ -3,6 +3,7 @@ module github.com/CLCM3102-Ice-Cream-Shop/backend-report-service
 go 1.21.1
 
 require (
+	github.com/aws/aws-sdk-go v1.48.16
 	github.com/jung-kurt/gofpdf v1.16.2
 	github.com/labstack/echo/v4 v4.11.3
 	github.com/shopspring/decimal v1.3.1
@@ -14,6 +15,7 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/labstack/gommon v0.4.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
