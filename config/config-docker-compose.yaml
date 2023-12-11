@@ -1,5 +1,5 @@
 app:
-    port: "3102"
+    port: "8083"
 log:
     env: "dev"
 gateway:
