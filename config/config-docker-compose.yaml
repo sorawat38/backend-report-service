@@ -4,6 +4,6 @@ log:
     env: "dev"
 gateway:
     paymentservice:
-        hosturl: "http://localhost:3101"
+        hosturl: "http://backend-payment-service:8082"
     menuservice:
-        hosturl: "http://localhost:3102"
+        hosturl: "http://backend-product-service:8081"
