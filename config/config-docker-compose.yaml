@@ -1,0 +1,9 @@
+app:
+    port: "3102"
+log:
+    env: "dev"
+gateway:
+    paymentservice:
+        hosturl: "http://backend-payment-service:3101"
+    menuservice:
+        hosturl: "http://backend-product-service:3102"
