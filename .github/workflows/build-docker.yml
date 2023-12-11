@@ -1,0 +1,35 @@
+name: Building Docker Image for docker compose
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_push_docker_image:
+    runs-on: ubuntu-latest
+    name: Build & Push Docker Image
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Replace docker compose config
+        run: |
+          mv config/config-docker-compose.yaml config/config.yaml
+
+      - name: Build the Docker image
+        run: |
+          docker build . \
+            --file Dockerfile \
+            --tag stanthikun802/backend-report-service:docker
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
+
+      - name: Push Docker image to Docker Hub
+        run: |
+          docker push stanthikun802/backend-report-service:docker
