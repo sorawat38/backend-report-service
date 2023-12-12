@@ -304,7 +304,7 @@ func generatePDF(date time.Time, totalOrder int, cartItems [][]string, subTotal 
 }
 
 func generateReportName() string {
-	return ReportName + "_" + time.Now().Format("20060102") + ".pdf"
+	return ReportName + "_" + time.Now().Format("20060102150405") + ".pdf"
 }
 
 func (srv service) notifyEmail(fileContent []byte) error {
