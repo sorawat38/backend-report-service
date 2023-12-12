@@ -1,7 +1,7 @@
 # Ice Cream Shop - Report service
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-
+ 
 Welcome to the Report Service, a versatile tool designed to facilitate report generation and management for your business. This service provides an efficient and customizable solution for creating, storing, and accessing reports in various formats.
 
 ## Features
