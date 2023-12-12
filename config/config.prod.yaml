@@ -4,9 +4,9 @@ log:
     env: "dev"
 gateway:
     paymentservice:
-        hosturl: "http://3.81.100.67:3101"
+        hosturl: "http://18.206.181.139:3101"
     menuservice:
-        hosturl: "http://3.81.100.67:3102"
+        hosturl: "http://18.206.181.139:3102"
 awssession:
     id: AWS_ID
     secret: AWS_SECRET
