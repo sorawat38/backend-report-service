@@ -6,9 +6,10 @@ import (
 )
 
 type Config struct {
-	App     App
-	Log     Log
-	Gateway Gateway
+	App        App
+	Log        Log
+	Gateway    Gateway
+	AWSSession AWSSession
 }
 
 type App struct {
@@ -23,6 +24,11 @@ type Log struct {
 type Gateway struct {
 	PaymentService config.PaymentServiceCfg
 	MenuService    config.MenuServiceCfg
+}
+
+type AWSSession struct {
+	Id     string
+	Secret string
 }
 
 func InitConfig() (Config, error) {

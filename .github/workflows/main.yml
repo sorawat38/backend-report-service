@@ -20,6 +20,12 @@ jobs:
             --file Dockerfile \
             --tag stanthikun802/backend-report-service:latest
 
+      - name: Replace password in config
+        run: |
+          sed -i 's/AWS_ID/${{ secrets.AWS_ID }}/g' config/config.prod.yaml
+          sed -i 's/AWS_SECRET/${{ secrets.AWS_SECRET }}/g' config/config.prod.yaml
+          mv config/config.prod.yaml config/config.yaml
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v1
         with:

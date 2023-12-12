@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -291,12 +290,6 @@ func generatePDF(date time.Time, totalOrder int, cartItems [][]string, subTotal 
 
 	// Convert the buffer content to a byte slice
 	pdfBytes := buf.Bytes()
-
-	err := os.WriteFile(generateReportName(), pdfBytes, 0644)
-	if err != nil {
-		logger.Error("Error writing PDF to file", zap.Error(err))
-		return nil, err
-	}
 
 	logger.Info("Monthly report generated successfully.")
 
