@@ -11,7 +11,6 @@ import (
 	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/helper/logger"
 	"github.com/CLCM3102-Ice-Cream-Shop/backend-report-service/internal/service/reportsrv"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/labstack/echo/v4"
@@ -54,8 +53,8 @@ func initAWSSession(config config.AWSSession) (*session.Session, error) {
 
 	// Initialize AWS session using your credentials or IAM role.
 	sess, err := session.NewSession(&aws.Config{
-		Region:      aws.String("us-east-1"),
-		Credentials: credentials.NewStaticCredentials(config.Id, config.Secret, ""),
+		Region: aws.String("us-east-1"),
+		// Credentials: credentials.NewStaticCredentials(config.Id, config.Secret, ""),
 	})
 	if err != nil {
 		logger.Error("Error creating AWS session", zap.Error(err))
