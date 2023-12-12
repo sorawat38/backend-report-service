@@ -7,3 +7,6 @@ gateway:
         hosturl: "http://127.0.0.1:8080"
     menuservice:
         hosturl: "http://127.0.0.1:8081"
+awssession:
+    id: AWS_ID
+    secret: AWS_SECRET

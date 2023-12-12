@@ -7,3 +7,6 @@ gateway:
         hosturl: "http://backend-payment-service:8080"
     menuservice:
         hosturl: "http://backend-product-service:8081"
+awssession:
+    id: AWS_ID
+    secret: AWS_SECRET
