@@ -16,6 +16,8 @@ jobs:
 
       - name: Replace docker compose config
         run: |
+          sed -i 's/AWS_ID/${{ secrets.AWS_ID }}/g' config/config-docker-compose.yaml
+          sed -i 's/AWS_SECRET/${{ secrets.AWS_SECRET }}/g' config/config-docker-compose.yaml
           mv config/config-docker-compose.yaml config/config.yaml
 
       - name: Build the Docker image
